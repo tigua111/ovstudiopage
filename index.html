@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="zh-Hant" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Origin Visuals — 品牌形象</title>
+    <meta name="description" content="Origin Visuals — 影像、音樂與 AI 工作流的實驗性工作室入口。" />
+    <script>
+      tailwind = {
+        theme: {
+          extend: {
+            colors: {
+              'ov-bg': '#020617',
+              'ov-accent': '#3B82F6',
+              'ov-muted': '#94A3B8'
+            },
+            animation: {
+              'blob': 'blob 10s infinite',
+            },
+            keyframes: {
+              blob: {
+                '0%, 100%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(40px, -60px) scale(1.15)' },
+                '66%': { transform: 'translate(-30px, 30px) scale(0.9)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Glassmorphism Base */
+      .glass { 
+        backdrop-filter: blur(14px) saturate(160%); 
+        background-color: rgba(255, 255, 255, 0.02); 
+        border: 1px solid rgba(255, 255, 255, 0.07);
+      }
+      .glass-hover {
+        transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1), 
+                    background-color 300ms, border-color 300ms, box-shadow 300ms;
+      }
+      .glass-hover:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        border-color: rgba(59, 130, 246, 0.4);
+        box-shadow: 0 20px 50px rgba(59, 130, 246, 0.2);
+        /* 滑鼠懸停時微調 3D 浮動效果 */
+        transform: translateY(-8px) scale(1.02) rotateX(2deg);
+      }
+      .glow { filter: drop-shadow(0 0 16px rgba(59,130,246,0.4)); }
+      
+      /* --- 3D 雙向滾動動畫系統 (3D Bi-directional Reveal) --- */
+      .perspective-container {
+        perspective: 1200px; /* 賦予整個網頁 3D 空間透視深度 */
+      }
+
+      .reveal { 
+        opacity: 0;
+        backface-visibility: hidden; /* 隱藏背面防止旋轉時閃爍 */
+        will-change: transform, opacity, filter;
+        /* 使用極度流暢的緩動曲線 */
+        transition: transform 1400ms cubic-bezier(0.16, 1, 0.3, 1), 
+                    opacity 1200ms cubic-bezier(0.16, 1, 0.3, 1), 
+                    filter 1200ms cubic-bezier(0.16, 1, 0.3, 1); 
+      }
+      
+      /* 初始狀態：帶有角度的 3D 偏移 */
+      .reveal-3d-left { 
+        transform: translateX(-100px) rotateY(35deg) scale(0.9); 
+        transform-origin: left center;
+      }
+      .reveal-3d-right { 
+        transform: translateX(100px) rotateY(-35deg) scale(0.9); 
+        transform-origin: right center;
+      }
+      .reveal-3d-flip { 
+        transform: translateY(80px) rotateX(-40deg) scale(0.92); 
+        transform-origin: center bottom;
+      }
+      .reveal-blur { 
+        filter: blur(30px); 
+        transform: translateY(40px) scale(0.95); 
+      }
+      
+      /* 激活狀態：完美回歸三維原點 (不論上滑下滑) */
+      .reveal.visible { 
+        transform: translate(0) rotateX(0) rotateY(0) scale(1); 
+        filter: blur(0); 
+        opacity: 1; 
+      }
+
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+  </head>
+  <body class="bg-[color:var(--ov-bg,#020617)] text-gray-100 overflow-x-hidden selection:bg-ov-accent selection:text-white" style="--ov-bg:#020617">
+    
+    <header class="fixed inset-x-0 top-0 z-50 p-4">
+      <nav id="navbar" class="glass mx-auto max-w-5xl px-6 py-3 rounded-2xl transition-all duration-500 flex items-center justify-between">
+        <a href="#" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-ov-accent to-[#7dd3fc] flex items-center justify-center glow transition-transform duration-500 group-hover:rotate-180">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" stroke="white" stroke-width="1.5"/></svg>
+          </div>
+          <span class="font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Origin Visuals</span>
+        </a>
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+          <a href="#works" class="text-gray-400 hover:text-white transition-colors duration-300">作品</a>
+          <a href="#tech" class="text-gray-400 hover:text-white transition-colors duration-300">技術</a>
+          <a href="#about" class="text-gray-400 hover:text-white transition-colors duration-300">關於</a>
+          <a href="#contact" class="px-5 py-2.5 bg-white text-black rounded-full hover:bg-ov-accent hover:text-white hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] transition-all duration-300 active:scale-95">
+            聯絡我們
+          </a>
+        </div>
+        <button id="menuBtn" class="md:hidden p-2 rounded-lg glass text-gray-300">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+      </nav>
+      <div id="mobileMenu" class="md:hidden hidden absolute top-20 left-4 right-4 glass rounded-2xl p-4 flex-col gap-2">
+        <a href="#works" class="block py-3 px-4 rounded-lg hover:bg-white/10">作品</a>
+        <a href="#tech" class="block py-3 px-4 rounded-lg hover:bg-white/10">技術</a>
+        <a href="#about" class="block py-3 px-4 rounded-lg hover:bg-white/10">關於</a>
+        <a href="#contact" class="block py-3 px-4 rounded-lg bg-ov-accent text-white font-medium text-center mt-2">聯絡我們</a>
+      </div>
+    </header>
+
+    <main class="perspective-container pt-24 pb-20">
+      
+      <section class="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
+        <div class="absolute top-10 -left-10 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[120px] opacity-25 animate-blob"></div>
+        <div class="absolute bottom-10 -right-10 w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-blob" style="animation-delay: 3s;"></div>
+        
+        <div class="relative z-10 max-w-5xl mx-auto px-6 text-center">
+          <div class="reveal reveal-3d-flip inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs text-ov-accent mb-8 font-medium tracking-wide">
+            <span class="w-2 h-2 rounded-full bg-ov-accent animate-pulse"></span>
+            NEXT-GEN AI WORKFLOW STUDIO
+          </div>
+          
+          <h1 class="reveal reveal-blur text-5xl md:text-7xl font-extrabold leading-tight tracking-tight text-white">
+            從原點出發<br />
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-ov-accent via-sky-400 to-purple-400">影像 • 音樂 • AI 工作流</span>
+          </h1>
+          
+          <p class="reveal reveal-3d-flip mt-8 text-ov-muted text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+            融合資傳敘事能力與前端 AI 技術。我們把複雜的數位邏輯，<br class="hidden md:block"/>轉化為打動人心的感性視覺語言。
+          </p>
+          
+          <div class="reveal reveal-3d-flip mt-12 flex flex-col sm:flex-row justify-center gap-5">
+            <a href="#works" class="group relative px-8 py-4 rounded-full glass hover:border-ov-accent/50 transition-all duration-500 hover:-translate-y-1">
+              <span class="flex items-center justify-center gap-2 font-medium">
+                查看精選專案 
+                <span class="group-hover:translate-x-1 transition-transform duration-300">→</span>
+              </span>
+            </a>
+            <a href="#contact" class="px-8 py-4 rounded-full bg-white text-black font-semibold hover:bg-ov-accent hover:text-white transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_15px_40px_-10px_rgba(59,130,246,0.6)]">
+              開始合作
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section id="works" class="max-w-7xl mx-auto px-6 py-28 border-t border-white/5">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
+          <div class="reveal reveal-3d-left">
+            <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight">精選作品</h2>
+            <p class="mt-3 text-ov-muted text-lg">探索我們在數位邊界上的視覺實驗</p>
+          </div>
+          <div class="reveal reveal-3d-right flex gap-3 overflow-x-auto no-scrollbar pb-2">
+            <button class="px-6 py-2.5 rounded-full bg-ov-accent text-white text-sm font-medium shadow-[0_4px_20px_rgba(59,130,246,0.3)]">全部</button>
+            <button class="px-6 py-2.5 rounded-full glass text-ov-muted hover:text-white text-sm font-medium transition-all duration-300">影像作品</button>
+            <button class="px-6 py-2.5 rounded-full glass text-ov-muted hover:text-white text-sm font-medium transition-all duration-300">音樂設計</button>
+            <button class="px-6 py-2.5 rounded-full glass text-ov-muted hover:text-white text-sm font-medium transition-all duration-300">AI 實驗室</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
+          <article class="md:col-span-4 group glass glass-hover p-8 md:p-12 rounded-[2rem] relative overflow-hidden flex flex-col justify-end reveal reveal-3d-left" style="min-height: 480px;">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent opacity-90 z-10"></div>
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-30 group-hover:scale-105 group-hover:opacity-45 transition-all duration-1000"></div>
+            
+            <div class="relative z-20">
+              <span class="px-3 py-1 bg-white/10 rounded-full text-xs font-medium text-white backdrop-blur-md mb-4 inline-block">EXPERIMENTAL FILM</span>
+              <h3 class="text-3xl md:text-4xl font-bold text-white tracking-tight">微電影《敘寫》</h3>
+              <p class="mt-4 text-gray-300 max-w-xl text-base leading-relaxed">資傳敘事與影像實驗的作品，探索記憶與畫面之間的非線性節奏。透過前瞻運鏡與精準光影，重新定義故事在數位時代的形狀。</p>
+              
+              <div class="mt-8 flex items-center gap-4 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
+                <button class="w-12 h-12 rounded-full bg-ov-accent text-white flex items-center justify-center hover:scale-110 transition-transform duration-300">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <span class="text-sm font-semibold tracking-wider">觀看完整實驗片段</span>
+              </div>
+            </div>
+          </article>
+
+          <div class="md:col-span-2 flex flex-col gap-6">
+            <article class="flex-1 glass glass-hover p-8 rounded-[2rem] relative overflow-hidden group reveal reveal-3d-right flex flex-col justify-between" style="min-height: 228px;">
+              <div>
+                <span class="text-xs font-bold text-ov-accent tracking-widest uppercase">Audio Architecture</span>
+                <h4 class="text-2xl font-bold mt-2 text-white">聲音美學設計</h4>
+              </div>
+              <div class="mt-6 h-12 w-full flex items-end gap-1.5">
+                <div class="w-2 h-6 bg-ov-accent rounded-full group-hover:h-12 transition-all duration-500"></div>
+                <div class="w-2 h-10 bg-[#7dd3fc] rounded-full group-hover:h-6 transition-all duration-500 delay-75"></div>
+                <div class="w-2.5 h-12 bg-ov-accent rounded-full group-hover:h-16 transition-all duration-500 delay-100"></div>
+                <div class="w-2 h-8 bg-[#7dd3fc] rounded-full group-hover:h-12 transition-all duration-500 delay-150"></div>
+                <div class="w-2 h-4 bg-ov-accent rounded-full group-hover:h-8 transition-all duration-500 delay-200"></div>
+              </div>
+              <a href="#" class="absolute inset-0 z-20"></a>
+            </article>
+
+            <article class="flex-1 glass glass-hover p-8 rounded-[2rem] relative overflow-hidden group reveal reveal-3d-right flex flex-col justify-between" style="min-height: 228px;">
+              <div>
+                <span class="text-xs font-bold text-purple-400 tracking-widest uppercase">Interactive Art</span>
+                <h4 class="text-2xl font-bold mt-2 text-white">節慶互動裝置</h4>
+                <p class="mt-3 text-sm text-ov-muted leading-relaxed">台北燈會科技感官專案，將實時人流數據轉化為沉浸式光影藝術。</p>
+              </div>
+              <div class="mt-4 flex items-center text-sm text-white font-semibold opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                探索數據美學 &rarr;
+              </div>
+              <a href="#" class="absolute inset-0 z-20"></a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="tech" class="max-w-7xl mx-auto px-6 py-24 border-t border-white/5">
+        <h2 class="text-3xl md:text-5xl font-extrabold mb-16 text-center reveal reveal-3d-flip tracking-tight">核心技術堆疊</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          
+          <div class="glass glass-hover p-8 md:p-10 rounded-[2rem] reveal reveal-3d-flip group">
+            <div class="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <h5 class="text-2xl font-bold text-white mb-5">AI 生成與工作流</h5>
+            <ul class="space-y-4 text-ov-muted text-base">
+              <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div> ComfyUI 高級自動化建置</li>
+              <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Stable Diffusion 模型微調</li>
+              <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div> 企業級 Prompt 流程優化</li>
+            </ul>
+          </div>
+          
+          <div class="glass glass-hover p-8 md:p-10 rounded-[2rem] reveal reveal-3d-flip group" style="transition-delay: 100ms;">
+            <div class="w-14 h-14 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <h5 class="text-2xl font-bold text-white mb-5">Coding 研發與前端</h5>
+            <ul class="space-y-4 text-ov-muted text-base">
+              <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Python 自動化 / 網路爬蟲</li>
+              <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div> 創意前端互動與視覺特效</li>
+              <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div> 數據可視化面板開發</li>
+            </ul>
+          </div>
+
+          <div class="glass glass-hover p-8 md:p-10 rounded-[2rem] reveal reveal-3d-flip group" style="transition-delay: 200ms;">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+            <h5 class="text-2xl font-bold text-white mb-5">聲音與音樂美學</h5>
+            <ul class="space-y-4 text-ov-muted text-base">
+              <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> 10 年獨立音樂製作經驗</li>
+              <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Logic Pro X 聲音數位架構</li>
+              <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> 絕對音感編排與動態配樂</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="max-w-4xl mx-auto px-6 py-24 text-center border-t border-white/5">
+        <div class="reveal reveal-blur">
+          <h2 class="text-3xl md:text-4xl font-bold mb-6 tracking-tight">關於 Origin Visuals</h2>
+          <p class="text-ov-muted text-lg leading-relaxed max-w-2xl mx-auto">
+            Origin Visuals 是一個前瞻性的實驗工作室。我們堅信，最頂級的數位作品必須立足於「理性邏輯」與「感性表達」的交界點。以獨特的資傳敘事視角為核心，賦予冰冷的程式與 AI 獨一無二的靈魂。
+          </p>
+        </div>
+      </section>
+
+      <section id="contact" class="max-w-4xl mx-auto px-6 py-20">
+        <div class="reveal reveal-3d-flip glass p-8 md:p-14 rounded-[2.5rem] relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-80 h-80 bg-blue-500 rounded-full mix-blend-screen filter blur-[100px] opacity-10"></div>
+          
+          <div class="grid md:grid-cols-2 gap-12 relative z-10">
+            <div class="flex flex-col justify-between">
+              <div>
+                <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-4">啟動下一個<br/>偉大專案</h2>
+                <p class="text-ov-muted text-base leading-relaxed">無論您需要突破性的影像製作、高訂音樂設計，還是想要導入前沿的 AI 自動化工作流，我們都已準備就緒。</p>
+              </div>
+              <div class="mt-8 space-y-3 text-sm text-gray-300">
+                <div class="flex items-center gap-3">
+                  <span class="text-ov-accent">●</span> hello@originvisuals.com
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-purple-400">●</span> 臺灣 • 台北市
+                </div>
+              </div>
+            </div>
+
+            <form id="contactForm" class="space-y-5">
+              <div>
+                <input type="text" name="name" placeholder="您的姓名" required class="w-full rounded-xl bg-black/50 border border-white/10 px-4 py-3.5 text-white placeholder-gray-500 focus:outline-none focus:border-ov-accent focus:ring-1 focus:ring-ov-accent transition-all duration-300" />
+              </div>
+              <div>
+                <input type="email" name="email" placeholder="Email 信箱" required class="w-full rounded-xl bg-black/50 border border-white/10 px-4 py-3.5 text-white placeholder-gray-500 focus:outline-none focus:border-ov-accent focus:ring-1 focus:ring-ov-accent transition-all duration-300" />
+              </div>
+              <div>
+                <textarea name="message" rows="4" placeholder="告訴我們您的想法與願景..." required class="w-full rounded-xl bg-black/50 border border-white/10 px-4 py-3.5 text-white placeholder-gray-500 focus:outline-none focus:border-ov-accent focus:ring-1 focus:ring-ov-accent transition-all duration-300 resize-none"></textarea>
+              </div>
+              <button id="sendBtn" type="submit" class="w-full py-4 rounded-xl bg-white text-black font-bold hover:bg-ov-accent hover:text-white transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg">
+                發送合作提案
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+              <div id="formMsg" class="text-sm text-center text-ov-accent h-5 font-medium"></div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="border-t border-white/5 py-12 text-center text-ov-muted text-sm">
+      <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="font-medium">© 2026 Origin Visuals. 數位邏輯與感性語言的實驗室。</div>
+        <div class="flex gap-6 font-medium">
+          <a href="#" class="hover:text-white transition-colors duration-300">Instagram</a>
+          <a href="#" class="hover:text-white transition-colors duration-300">Behance</a>
+          <a href="#" class="hover:text-white transition-colors duration-300">YouTube</a>
+        </div>
+      </div>
+    </footer>
+
+    <button id="backToTop" class="fixed bottom-6 right-6 w-12 h-12 rounded-full glass flex items-center justify-center text-white opacity-0 translate-y-10 transition-all duration-500 z-50 hover:bg-ov-accent hover:border-ov-accent shadow-2xl">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+    </button>
+
+    <script>
+      // Navbar scroll behavior
+      const navbar = document.getElementById('navbar');
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 30) {
+          navbar.classList.add('shadow-2xl', 'bg-black/50', 'backdrop-blur-2xl');
+          navbar.classList.remove('py-3');
+          navbar.classList.add('py-2');
+        } else {
+          navbar.classList.remove('shadow-2xl', 'bg-black/50', 'backdrop-blur-2xl');
+          navbar.classList.remove('py-2');
+          navbar.classList.add('py-3');
+        }
+      });
+
+      // Back to Top Button
+      const backToTopBtn = document.getElementById('backToTop');
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 500) {
+          backToTopBtn.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+        } else {
+          backToTopBtn.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+        }
+      });
+      backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      // Mobile menu toggle
+      const menuBtn = document.getElementById('menuBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
+      menuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+        mobileMenu.classList.toggle('flex');
+      });
+
+      /* --- 雙向滾動 3D 偵測邏輯 (Bi-directional 3D Reveal Observer) --- */
+      const revealEls = document.querySelectorAll('.reveal');
+      
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            // 當進入畫面時，加入 visible 觸發 3D 回正與顯現
+            e.target.classList.add('visible');
+          } else {
+            // 【關鍵修改】當離開螢幕（不論是往上滑走還是往下滑走），移除 visible 恢復初始 3D 旋轉姿態
+            e.target.classList.remove('visible');
+          }
+        });
+      }, {
+        threshold: 0.1, // 元件露出 10% 就開始 3D 轉入
+        rootMargin: "-20px 0px -20px 0px" // 微調上下邊界，讓轉場更精準
+      });
+      
+      revealEls.forEach(el => io.observe(el));
+
+      // Form validation
+      const form = document.getElementById('contactForm');
+      const formMsg = document.getElementById('formMsg');
+      const sendBtn = document.getElementById('sendBtn');
+      
+      form.addEventListener('submit', (evt) => {
+        evt.preventDefault();
+        const originalText = sendBtn.innerHTML;
+        sendBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2 inline" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 提案傳送中...';
+        
+        setTimeout(() => {
+          sendBtn.innerHTML = originalText;
+          formMsg.textContent = '提案已傳送！我們會於 24 小時內與您聯絡。';
+          formMsg.className = "text-sm text-center text-emerald-400 h-5 font-medium";
+          form.reset();
+          setTimeout(() => { formMsg.textContent = ''; }, 4000);
+        }, 1200);
+      });
+    </script>
+  </body>
+</html>
